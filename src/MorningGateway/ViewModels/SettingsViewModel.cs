@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.Input;
 using MorningGateway.Models;
 using MorningGateway.Services.Calendar;
 using MorningGateway.Services.Display;
+using MorningGateway.Services.Updates;
 using MorningGateway.Services.Weather;
 
 namespace MorningGateway.ViewModels;
@@ -16,8 +17,9 @@ public partial class SettingsViewModel : ObservableObject
     readonly IWeatherService _weatherService;
     readonly DeviceLocationService _locationService;
 
-    public SettingsViewModel(SettingsStore settings, CalendarSourceStore sourceStore, GoogleCalendarProvider googleProvider, CalDavClient calDavClient, IWeatherService weatherService, DeviceLocationService locationService)
+    public SettingsViewModel(SettingsStore settings, CalendarSourceStore sourceStore, GoogleCalendarProvider googleProvider, CalDavClient calDavClient, IWeatherService weatherService, DeviceLocationService locationService, UpdateCoordinator updates)
     {
+        Updates = updates;
         Settings = settings;
         _sourceStore = sourceStore;
         _googleProvider = googleProvider;
@@ -33,6 +35,14 @@ public partial class SettingsViewModel : ObservableObject
     }
 
     public SettingsStore Settings { get; }
+
+    public UpdateCoordinator Updates { get; }
+
+    [RelayCommand]
+    Task CheckForUpdatesAsync() => Updates.CheckAsync();
+
+    [RelayCommand]
+    Task InstallUpdateAsync() => Updates.InstallAsync();
 
     public List<string> ThemeOptions { get; } = new() { "System", "Light", "Dark" };
 

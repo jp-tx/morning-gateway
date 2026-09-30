@@ -131,6 +131,19 @@
                 </VerticalStackLayout>
             </Border>
 
+            <!-- Updates -->
+            <Border Style="{StaticResource Card}" Padding="16">
+                <VerticalStackLayout Spacing="12">
+                    <Label Text="Updates" Style="{StaticResource HeadingLabel}" FontSize="18" />
+                    <Label Text="{Binding Updates.CurrentVersionText, StringFormat='Installed: {0}'}" Style="{StaticResource SecondaryLabel}" />
+                    <Label Text="{Binding Updates.Status}" Style="{StaticResource SecondaryLabel}" FontSize="12" />
+                    <HorizontalStackLayout Spacing="12">
+                        <Button Text="Check for updates" Command="{Binding CheckForUpdatesCommand}" IsEnabled="{Binding Updates.IsBusy, Converter={StaticResource InvertedBool}}" />
+                        <Button Text="Install update" Command="{Binding InstallUpdateCommand}" IsVisible="{Binding Updates.HasUpdate}" IsEnabled="{Binding Updates.IsBusy, Converter={StaticResource InvertedBool}}" />
+                    </HorizontalStackLayout>
+                </VerticalStackLayout>
+            </Border>
+
             <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}" />
             <Label Text="{Binding StatusMessage}" Style="{StaticResource SecondaryLabel}" HorizontalTextAlignment="Center" />
 

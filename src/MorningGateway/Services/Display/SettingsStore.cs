@@ -55,6 +55,13 @@ public class SettingsStore
         set { Preferences.Default.Set(nameof(GoogleOAuthClientId), value ?? string.Empty); Changed?.Invoke(); }
     }
 
+    /// <summary>When the app last asked GitHub for a newer release. Deliberately doesn't raise Changed (that would refresh the dashboard).</summary>
+    public DateTime LastUpdateCheckUtc
+    {
+        get => new(Preferences.Default.Get(nameof(LastUpdateCheckUtc), 0L), DateTimeKind.Utc);
+        set => Preferences.Default.Set(nameof(LastUpdateCheckUtc), value.Ticks);
+    }
+
     /// <summary>Seconds between burn-in protection nudges (pixel shift + subtle dimming pulse).</summary>
     public int BurnInIntervalSeconds
     {

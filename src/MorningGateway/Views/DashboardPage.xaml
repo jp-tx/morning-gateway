@@ -21,7 +21,7 @@
                     <Label Grid.Column="1" Text="{Binding FocusedMonthLabel}" IsVisible="{Binding IsMonthMode}" Style="{StaticResource SecondaryLabel}" FontSize="20" VerticalOptions="Center" Margin="20,0,0,0" />
                     <Label Grid.Column="1" Text="{Binding FocusedDayLabel}" IsVisible="{Binding IsMonthMode, Converter={StaticResource InvertedBool}}" Style="{StaticResource SecondaryLabel}" FontSize="20" VerticalOptions="Center" Margin="20,0,0,0" />
 
-                    <Label Grid.Column="1" Text="{Binding CalendarProblem}" IsVisible="{Binding HasCalendarProblem}" TextColor="#F5A623" FontSize="14" LineBreakMode="TailTruncation" HorizontalOptions="End" VerticalOptions="Center" />
+                    <Label Grid.Column="1" Text="{Binding StatusNotice}" IsVisible="{Binding HasStatusNotice}" TextColor="#F5A623" FontSize="14" LineBreakMode="TailTruncation" HorizontalOptions="End" VerticalOptions="Center" />
 
                     <Button Grid.Column="2" Text="Today" Style="{StaticResource IconButton}" WidthRequest="72" Command="{Binding GoToTodayCommand}" />
                     <Button Grid.Column="3" Text="&#8592;" Style="{StaticResource IconButton}" Command="{Binding PreviousCommand}" />

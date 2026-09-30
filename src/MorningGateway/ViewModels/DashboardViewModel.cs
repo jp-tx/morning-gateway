@@ -5,6 +5,7 @@ using CommunityToolkit.Mvvm.Input;
 using MorningGateway.Models;
 using MorningGateway.Services.Calendar;
 using MorningGateway.Services.Display;
+using MorningGateway.Services.Updates;
 using MorningGateway.Services.Weather;
 using MorningGateway.Views;
 
@@ -15,12 +16,15 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
     readonly CalendarAggregatorService _calendarAggregator;
     readonly IWeatherService _weatherService;
     readonly SettingsStore _settings;
+    readonly UpdateCoordinator _updates;
 
     IDispatcherTimer? _clockTimer;
     IDispatcherTimer? _refreshTimer;
 
-    public DashboardViewModel(CalendarAggregatorService calendarAggregator, IWeatherService weatherService, SettingsStore settings, BurnInProtectionService burnIn)
+    public DashboardViewModel(CalendarAggregatorService calendarAggregator, IWeatherService weatherService, SettingsStore settings, BurnInProtectionService burnIn, UpdateCoordinator updates)
     {
+        _updates = updates;
+        _updates.PropertyChanged += (_, _) => OnPropertyChanged(nameof(StatusNotice));
         _calendarAggregator = calendarAggregator;
         _weatherService = weatherService;
         _settings = settings;
@@ -66,10 +70,15 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
     bool isBusy;
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(HasCalendarProblem))]
+    [NotifyPropertyChangedFor(nameof(HasCalendarProblem), nameof(StatusNotice), nameof(HasStatusNotice))]
     string calendarProblem = string.Empty;
 
     public bool HasCalendarProblem => !string.IsNullOrEmpty(CalendarProblem);
+
+    /// <summary>Top-bar notice: calendar problems and/or an available app update.</summary>
+    public string StatusNotice => string.Join(" · ", new[] { CalendarProblem, _updates.Notice }.Where(t => !string.IsNullOrEmpty(t)));
+
+    public bool HasStatusNotice => !string.IsNullOrEmpty(StatusNotice);
 
     public string FocusedMonthLabel => FocusedMonth.ToString("MMMM yyyy", CultureInfo.CurrentCulture);
 
@@ -121,7 +130,7 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
         IsBusy = true;
         try
         {
-            await Task.WhenAll(RefreshCalendarAsync(), RefreshWeatherAsync());
+            await Task.WhenAll(RefreshCalendarAsync(), RefreshWeatherAsync(), _updates.CheckIfDueAsync());
         }
         finally
         {

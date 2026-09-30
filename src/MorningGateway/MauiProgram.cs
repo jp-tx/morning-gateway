@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Logging;
 using MorningGateway.Services.Calendar;
 using MorningGateway.Services.Display;
+using MorningGateway.Services.Updates;
 using MorningGateway.Services.Weather;
 using MorningGateway.ViewModels;
 using MorningGateway.Views;
@@ -17,6 +18,11 @@ public static class MauiProgram
         // --- Cross-cutting ---
         builder.Services.AddSingleton<HttpClient>();
         builder.Services.AddSingleton<SettingsStore>();
+
+        // --- Updates (GitHub Releases) ---
+        builder.Services.AddSingleton(sp => new UpdateService(sp.GetRequiredService<HttpClient>()));
+        builder.Services.AddSingleton<IApkInstaller, ApkInstaller>();
+        builder.Services.AddSingleton<UpdateCoordinator>();
 
         // --- Calendar ---
         builder.Services.AddSingleton<CalendarSourceStore>();
