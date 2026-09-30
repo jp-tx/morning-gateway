@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:models="clr-namespace:MorningGateway.Models"
+             x:Class="MorningGateway.Views.MonthCalendarView"
+             x:Name="Root">
+    <Grid RowDefinitions="Auto,*" RowSpacing="6">
+
+        <CollectionView Grid.Row="0" ItemsSource="{Binding WeekdayHeaders, Source={x:Reference Root}}">
+            <CollectionView.ItemsLayout>
+                <GridItemsLayout Orientation="Vertical" Span="7" />
+            </CollectionView.ItemsLayout>
+            <CollectionView.ItemTemplate>
+                <DataTemplate x:DataType="x:String">
+                    <Label Text="{Binding .}" Style="{StaticResource SecondaryLabel}" FontAttributes="Bold" FontSize="13" HorizontalOptions="Center" Margin="0,0,0,4" />
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
+
+        <CollectionView Grid.Row="1" ItemsSource="{Binding Cells, Source={x:Reference Root}}">
+            <CollectionView.ItemsLayout>
+                <GridItemsLayout Orientation="Vertical" Span="7" HorizontalItemSpacing="4" VerticalItemSpacing="4" />
+            </CollectionView.ItemsLayout>
+            <CollectionView.ItemTemplate>
+                <DataTemplate x:DataType="models:MonthDayCell">
+                    <Border Stroke="{AppThemeBinding Light={StaticResource LightDivider}, Dark={StaticResource DarkDivider}}"
+                            StrokeThickness="1"
+                            StrokeShape="RoundRectangle 8"
+                            Padding="6"
+                            BackgroundColor="{AppThemeBinding Light={StaticResource LightSurface}, Dark={StaticResource DarkSurface}}">
+                        <Border.Triggers>
+                            <DataTrigger TargetType="Border" Binding="{Binding IsCurrentMonth}" Value="False">
+                                <Setter Property="Opacity" Value="0.35" />
+                            </DataTrigger>
+                            <DataTrigger TargetType="Border" Binding="{Binding IsToday}" Value="True">
+                                <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource LightTodayHighlight}, Dark={StaticResource DarkTodayHighlight}}" />
+                                <Setter Property="Stroke" Value="{StaticResource Accent}" />
+                            </DataTrigger>
+                        </Border.Triggers>
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer Command="{Binding SelectDayCommand, Source={x:Reference Root}}" CommandParameter="{Binding .}" />
+                        </Border.GestureRecognizers>
+                        <Grid RowDefinitions="Auto,*,Auto" RowSpacing="2">
+                            <Label Grid.Row="0"
+                                   Text="{Binding DayNumberText}"
+                                   FontAttributes="Bold"
+                                   FontSize="13"
+                                   HorizontalOptions="End" />
+                            <VerticalStackLayout Grid.Row="1" Spacing="2" BindableLayout.ItemsSource="{Binding VisibleEvents}">
+                                <BindableLayout.ItemTemplate>
+                                    <DataTemplate x:DataType="models:CalendarEvent">
+                                        <Border StrokeThickness="0" Padding="4,1" BackgroundColor="{Binding ColorHex}" StrokeShape="RoundRectangle 4">
+                                            <Label Text="{Binding Title}" TextColor="White" FontSize="10" LineBreakMode="TailTruncation" />
+                                        </Border>
+                                    </DataTemplate>
+                                </BindableLayout.ItemTemplate>
+                            </VerticalStackLayout>
+                            <Label Grid.Row="2" Text="{Binding OverflowText}" IsVisible="{Binding HasOverflow}" Style="{StaticResource SecondaryLabel}" FontSize="9" />
+                        </Grid>
+                    </Border>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
+
+    </Grid>
+</ContentView>

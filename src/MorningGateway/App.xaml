@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<Application xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:conv="clr-namespace:MorningGateway.Converters"
+             x:Class="MorningGateway.App">
+    <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="Resources/Styles/Colors.xaml" />
+                <ResourceDictionary Source="Resources/Styles/Styles.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+
+            <conv:InvertedBoolConverter x:Key="InvertedBool" />
+            <conv:CountToBoolConverter x:Key="CountToBool" />
+            <conv:WeatherCodeGlyphConverter x:Key="CodeGlyph" />
+            <conv:CurrentConditionsGlyphConverter x:Key="CurrentGlyph" />
+            <conv:DateOnlyToWeekdayConverter x:Key="Weekday" />
+            <conv:TimeOffsetToHourConverter x:Key="HourLabel" />
+        </ResourceDictionary>
+    </Application.Resources>
+</Application>

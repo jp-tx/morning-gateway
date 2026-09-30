@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="MorningGateway.Views.DayCalendarView"
+             x:Name="Root">
+    <Grid RowDefinitions="Auto,*" RowSpacing="8">
+
+        <FlexLayout x:Name="AllDayRow" Grid.Row="0" Wrap="Wrap" Direction="Row" />
+
+        <ScrollView x:Name="Scroller" Grid.Row="1">
+            <Grid x:Name="TimelineGrid" ColumnDefinitions="56,*">
+                <VerticalStackLayout x:Name="HourLabelsColumn" Grid.Column="0" Spacing="0" />
+                <AbsoluteLayout x:Name="EventCanvas" Grid.Column="1" />
+            </Grid>
+        </ScrollView>
+
+    </Grid>
+</ContentView>

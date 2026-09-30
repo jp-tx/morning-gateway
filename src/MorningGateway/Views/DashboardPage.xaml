@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:views="clr-namespace:MorningGateway.Views"
+             xmlns:vm="clr-namespace:MorningGateway.ViewModels"
+             x:Class="MorningGateway.Views.DashboardPage"
+             x:DataType="vm:DashboardViewModel"
+             Shell.NavBarIsVisible="False">
+
+    <Grid>
+
+        <!-- Burn-in mitigation: the whole dashboard slowly orbits a few pixels. Oversized
+             margin keeps the edges covered while it does. -->
+        <Grid Margin="-14" TranslationX="{Binding BurnIn.OffsetX}" TranslationY="{Binding BurnIn.OffsetY}">
+            <Grid Padding="26,20,26,14" RowDefinitions="Auto,*" RowSpacing="16" Margin="14">
+
+                <!-- Top bar -->
+                <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto,Auto,Auto,Auto,Auto" ColumnSpacing="10">
+                    <Label Grid.Column="0" Text="{Binding ClockTime, StringFormat='{0:h:mm tt}'}" Style="{StaticResource HeadingLabel}" VerticalOptions="Center" />
+
+                    <Label Grid.Column="1" Text="{Binding FocusedMonthLabel}" IsVisible="{Binding IsMonthMode}" Style="{StaticResource SecondaryLabel}" FontSize="20" VerticalOptions="Center" Margin="20,0,0,0" />
+                    <Label Grid.Column="1" Text="{Binding FocusedDayLabel}" IsVisible="{Binding IsMonthMode, Converter={StaticResource InvertedBool}}" Style="{StaticResource SecondaryLabel}" FontSize="20" VerticalOptions="Center" Margin="20,0,0,0" />
+
+                    <Label Grid.Column="1" Text="{Binding CalendarProblem}" IsVisible="{Binding HasCalendarProblem}" TextColor="#F5A623" FontSize="14" LineBreakMode="TailTruncation" HorizontalOptions="End" VerticalOptions="Center" />
+
+                    <Button Grid.Column="2" Text="Today" Style="{StaticResource IconButton}" WidthRequest="72" Command="{Binding GoToTodayCommand}" />
+                    <Button Grid.Column="3" Text="&#8592;" Style="{StaticResource IconButton}" Command="{Binding PreviousCommand}" />
+                    <Button Grid.Column="4" Text="&#8594;" Style="{StaticResource IconButton}" Command="{Binding NextCommand}" />
+                    <Button Grid.Column="5" Text="Day" Style="{StaticResource IconButton}" WidthRequest="72" Command="{Binding ToggleViewModeCommand}">
+                        <Button.Triggers>
+                            <DataTrigger TargetType="Button" Binding="{Binding IsMonthMode}" Value="False">
+                                <Setter Property="Text" Value="Month" />
+                            </DataTrigger>
+                        </Button.Triggers>
+                    </Button>
+                    <Button Grid.Column="6" Text="&#9881;" Style="{StaticResource IconButton}" Command="{Binding OpenSettingsCommand}" />
+                </Grid>
+
+                <!-- Main content: calendar + weather sidebar -->
+                <Grid Grid.Row="1" ColumnDefinitions="*,320" ColumnSpacing="20">
+
+                    <Border Grid.Column="0" Style="{StaticResource Card}" Padding="14">
+                        <Grid>
+                            <views:MonthCalendarView IsVisible="{Binding IsMonthMode}"
+                                                      Cells="{Binding MonthCells}"
+                                                      WeekdayHeaders="{Binding WeekdayHeaders}"
+                                                      SelectDayCommand="{Binding SelectDayCommand}" />
+
+                            <views:DayCalendarView IsVisible="{Binding IsMonthMode, Converter={StaticResource InvertedBool}}"
+                                                    Day="{Binding FocusedDay}"
+                                                    TimedEvents="{Binding DayTimedEvents}"
+                                                    AllDayEvents="{Binding DayAllDayEvents}" />
+                        </Grid>
+                    </Border>
+
+                    <views:WeatherSidebarView Grid.Column="1" Weather="{Binding Weather}" />
+
+                </Grid>
+            </Grid>
+        </Grid>
+
+        <!-- Burn-in mitigation: near-invisible luminance pulse -->
+        <BoxView Color="Black" InputTransparent="True" Opacity="{Binding BurnIn.DimOpacity}" />
+
+    </Grid>
+
+</ContentPage>

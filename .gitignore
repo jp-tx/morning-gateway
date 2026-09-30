@@ -1,0 +1,11 @@
+[Bb]in/
+[Oo]bj/
+.vs/
+*.user
+*.userosscache
+*.suo
+.idea/
+*.apk
+*.aab
+*.dSYM.zip
+*.dSYM

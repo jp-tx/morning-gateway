@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="MorningGateway.Views.WeatherSidebarView"
+             x:Name="Root">
+    <Border Style="{StaticResource Card}" Padding="16" Margin="0">
+        <Grid RowDefinitions="Auto,Auto,1,Auto,1,*" RowSpacing="12">
+
+            <Label Grid.Row="0"
+                   Text="{Binding Weather.LocationName, Source={x:Reference Root}}"
+                   Style="{StaticResource SecondaryLabel}"
+                   FontSize="14"
+                   LineBreakMode="TailTruncation" />
+
+            <VerticalStackLayout Grid.Row="1" Spacing="2">
+                <HorizontalStackLayout Spacing="8">
+                    <Label Text="{Binding Weather.Current, Source={x:Reference Root}, Converter={StaticResource CurrentGlyph}}" FontSize="36" VerticalOptions="Center" />
+                    <Label Text="{Binding Weather.Current.Temperature, Source={x:Reference Root}, StringFormat='{0:F0}'}" FontSize="44" FontAttributes="Bold" VerticalOptions="Center" />
+                    <Label Text="{Binding Weather.UnitSuffix, Source={x:Reference Root}}" FontSize="20" VerticalOptions="Start" Margin="0,4,0,0" />
+                </HorizontalStackLayout>
+                <Label Text="{Binding Weather.Current.FeelsLike, Source={x:Reference Root}, StringFormat='Feels like {0:F0}°'}" Style="{StaticResource SecondaryLabel}" FontSize="13" />
+            </VerticalStackLayout>
+
+            <BoxView Grid.Row="2" HeightRequest="1" Color="{AppThemeBinding Light={StaticResource LightDivider}, Dark={StaticResource DarkDivider}}" />
+
+            <CollectionView Grid.Row="3" ItemsSource="{Binding Weather.Hourly, Source={x:Reference Root}}" HeightRequest="88" ItemsLayout="HorizontalList">
+                <CollectionView.ItemTemplate>
+                    <DataTemplate>
+                        <VerticalStackLayout WidthRequest="54" Spacing="4" HorizontalOptions="Center" Padding="0,4">
+                            <Label Text="{Binding Time, Converter={StaticResource HourLabel}}" FontSize="11" HorizontalOptions="Center" Style="{StaticResource SecondaryLabel}" />
+                            <Label Text="{Binding WeatherCode, Converter={StaticResource CodeGlyph}}" FontSize="18" HorizontalOptions="Center" />
+                            <Label Text="{Binding Temperature, StringFormat='{0:F0}°'}" FontSize="13" HorizontalOptions="Center" />
+                        </VerticalStackLayout>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+
+            <BoxView Grid.Row="4" HeightRequest="1" Color="{AppThemeBinding Light={StaticResource LightDivider}, Dark={StaticResource DarkDivider}}" />
+
+            <CollectionView Grid.Row="5" ItemsSource="{Binding Weather.Daily, Source={x:Reference Root}}">
+                <CollectionView.ItemTemplate>
+                    <DataTemplate>
+                        <Grid ColumnDefinitions="48,32,*,Auto" Padding="0,8">
+                            <Label Grid.Column="0" Text="{Binding Date, Converter={StaticResource Weekday}}" VerticalOptions="Center" FontSize="14" />
+                            <Label Grid.Column="1" Text="{Binding WeatherCode, Converter={StaticResource CodeGlyph}}" FontSize="17" VerticalOptions="Center" />
+                            <Label Grid.Column="2" Text="{Binding PrecipitationProbability, StringFormat='{0}%'}" Style="{StaticResource SecondaryLabel}" FontSize="12" VerticalOptions="Center" HorizontalOptions="Start" Margin="8,0,0,0" />
+                            <Label Grid.Column="3" VerticalOptions="Center">
+                                <Label.FormattedText>
+                                    <FormattedString>
+                                        <Span Text="{Binding TempMax, StringFormat='{0:F0}°'}" FontAttributes="Bold" />
+                                        <Span Text="  " />
+                                        <Span Text="{Binding TempMin, StringFormat='{0:F0}°'}" />
+                                    </FormattedString>
+                                </Label.FormattedText>
+                            </Label>
+                        </Grid>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+
+        </Grid>
+    </Border>
+</ContentView>
