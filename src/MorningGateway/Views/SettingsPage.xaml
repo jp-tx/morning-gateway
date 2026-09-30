@@ -7,7 +7,15 @@
              x:DataType="vm:SettingsViewModel"
              Title="Settings">
 
-    <ScrollView>
+    <Grid RowDefinitions="Auto,*">
+
+    <!-- Fixed header: kiosk mode hides the system back control, so Settings needs its own way out. -->
+    <Grid Grid.Row="0" Padding="20,16,20,8" ColumnDefinitions="*,Auto">
+        <Label Text="Settings" Style="{StaticResource HeadingLabel}" VerticalOptions="Center" />
+        <Button Grid.Column="1" Text="Done" Style="{StaticResource IconButton}" WidthRequest="96" Command="{Binding CloseCommand}" />
+    </Grid>
+
+    <ScrollView Grid.Row="1">
         <VerticalStackLayout Padding="20" Spacing="22">
 
             <!-- Appearance -->
@@ -23,6 +31,11 @@
                     <Grid ColumnDefinitions="*,Auto">
                         <Label Text="Use Fahrenheit" VerticalOptions="Center" />
                         <Switch Grid.Column="1" IsToggled="{Binding Settings.UseFahrenheit}" />
+                    </Grid>
+
+                    <Grid ColumnDefinitions="*,Auto">
+                        <Label Text="Kiosk mode (hides the status and navigation bars until you restart the app)" VerticalOptions="Center" />
+                        <Button Grid.Column="1" Text="{Binding Kiosk.ButtonText}" Command="{Binding ToggleKioskCommand}" />
                     </Grid>
 
                     <Grid ColumnDefinitions="*,Auto">
@@ -149,5 +162,7 @@
 
         </VerticalStackLayout>
     </ScrollView>
+
+    </Grid>
 
 </ContentPage>

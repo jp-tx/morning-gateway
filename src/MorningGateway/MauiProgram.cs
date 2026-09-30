@@ -39,6 +39,7 @@ public static class MauiProgram
 
         // --- Display / kiosk behavior ---
         builder.Services.AddSingleton<KeepAwakeService>();
+        builder.Services.AddSingleton<KioskService>();
         builder.Services.AddSingleton<ThemeService>();
         builder.Services.AddSingleton<BurnInProtectionService>();
 

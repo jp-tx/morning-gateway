@@ -17,8 +17,9 @@ public partial class SettingsViewModel : ObservableObject
     readonly IWeatherService _weatherService;
     readonly DeviceLocationService _locationService;
 
-    public SettingsViewModel(SettingsStore settings, CalendarSourceStore sourceStore, GoogleCalendarProvider googleProvider, CalDavClient calDavClient, IWeatherService weatherService, DeviceLocationService locationService, UpdateCoordinator updates)
+    public SettingsViewModel(SettingsStore settings, CalendarSourceStore sourceStore, GoogleCalendarProvider googleProvider, CalDavClient calDavClient, IWeatherService weatherService, DeviceLocationService locationService, UpdateCoordinator updates, KioskService kiosk)
     {
+        Kiosk = kiosk;
         Updates = updates;
         Settings = settings;
         _sourceStore = sourceStore;
@@ -37,6 +38,20 @@ public partial class SettingsViewModel : ObservableObject
     public SettingsStore Settings { get; }
 
     public UpdateCoordinator Updates { get; }
+
+    public KioskService Kiosk { get; }
+
+    [RelayCommand]
+    void ToggleKiosk() => Kiosk.Toggle();
+
+    [RelayCommand]
+    async Task CloseAsync()
+    {
+        if (Shell.Current is not null)
+        {
+            await Shell.Current.GoToAsync("..");
+        }
+    }
 
     [RelayCommand]
     Task CheckForUpdatesAsync() => Updates.CheckAsync();
