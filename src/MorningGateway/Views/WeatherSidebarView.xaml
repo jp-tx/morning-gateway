@@ -23,25 +23,28 @@
 
             <BoxView Grid.Row="2" HeightRequest="1" Color="{AppThemeBinding Light={StaticResource LightDivider}, Dark={StaticResource DarkDivider}}" />
 
-            <CollectionView Grid.Row="3" ItemsSource="{Binding Weather.Hourly, Source={x:Reference Root}}" HeightRequest="88" ItemsLayout="HorizontalList">
-                <CollectionView.ItemTemplate>
-                    <DataTemplate>
-                        <VerticalStackLayout WidthRequest="54" Spacing="4" HorizontalOptions="Center" Padding="0,4">
-                            <Label Text="{Binding Time, Converter={StaticResource HourLabel}}" FontSize="11" HorizontalOptions="Center" Style="{StaticResource SecondaryLabel}" />
-                            <Label Text="{Binding WeatherCode, Converter={StaticResource CodeGlyph}}" FontSize="18" HorizontalOptions="Center" />
-                            <Label Text="{Binding Temperature, StringFormat='{0:F0}°'}" FontSize="13" HorizontalOptions="Center" />
-                        </VerticalStackLayout>
-                    </DataTemplate>
-                </CollectionView.ItemTemplate>
-            </CollectionView>
+            <!-- Sizes to its content (a fixed height clipped the temperatures at large UI scales). -->
+            <ScrollView Grid.Row="3" Orientation="Horizontal" HorizontalScrollBarVisibility="Never">
+                <HorizontalStackLayout BindableLayout.ItemsSource="{Binding Weather.Hourly, Source={x:Reference Root}}">
+                    <BindableLayout.ItemTemplate>
+                        <DataTemplate>
+                            <VerticalStackLayout MinimumWidthRequest="54" Spacing="4" Padding="6,4">
+                                <Label Text="{Binding Time, Converter={StaticResource HourLabel}}" FontSize="11" HorizontalOptions="Center" Style="{StaticResource SecondaryLabel}" />
+                                <Label Text="{Binding WeatherCode, Converter={StaticResource CodeGlyph}}" FontSize="18" HorizontalOptions="Center" />
+                                <Label Text="{Binding Temperature, StringFormat='{0:F0}°'}" FontSize="13" HorizontalOptions="Center" />
+                            </VerticalStackLayout>
+                        </DataTemplate>
+                    </BindableLayout.ItemTemplate>
+                </HorizontalStackLayout>
+            </ScrollView>
 
             <BoxView Grid.Row="4" HeightRequest="1" Color="{AppThemeBinding Light={StaticResource LightDivider}, Dark={StaticResource DarkDivider}}" />
 
             <CollectionView Grid.Row="5" ItemsSource="{Binding Weather.Daily, Source={x:Reference Root}}">
                 <CollectionView.ItemTemplate>
                     <DataTemplate>
-                        <Grid ColumnDefinitions="48,32,*,Auto" Padding="0,8">
-                            <Label Grid.Column="0" Text="{Binding Date, Converter={StaticResource Weekday}}" VerticalOptions="Center" FontSize="14" />
+                        <Grid ColumnDefinitions="80,44,*,Auto" Padding="0,8">
+                            <Label Grid.Column="0" Text="{Binding Date, Converter={StaticResource Weekday}}" VerticalOptions="Center" FontSize="14" LineBreakMode="NoWrap" />
                             <Label Grid.Column="1" Text="{Binding WeatherCode, Converter={StaticResource CodeGlyph}}" FontSize="17" VerticalOptions="Center" />
                             <Label Grid.Column="2" Text="{Binding PrecipitationProbability, StringFormat='{0}%'}" Style="{StaticResource SecondaryLabel}" FontSize="12" VerticalOptions="Center" HorizontalOptions="Start" Margin="8,0,0,0" />
                             <Label Grid.Column="3" VerticalOptions="Center">

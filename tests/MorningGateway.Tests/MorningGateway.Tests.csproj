@@ -34,6 +34,7 @@
     <Compile Include="..\..\src\MorningGateway\Services\Weather\WeatherCodeInfo.cs" />
     <Compile Include="..\..\src\MorningGateway\Services\Weather\IWeatherService.cs" />
     <Compile Include="..\..\src\MorningGateway\Services\Display\SettingsStore.cs" />
+    <Compile Include="..\..\src\MorningGateway\Services\Display\UiScale.cs" />
     <Compile Include="..\..\src\MorningGateway\Services\Updates\UpdateService.cs" />
   </ItemGroup>
 

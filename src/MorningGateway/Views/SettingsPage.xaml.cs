@@ -1,4 +1,5 @@
 using MorningGateway.Models;
+using MorningGateway.Services.Display;
 using MorningGateway.ViewModels;
 
 namespace MorningGateway.Views;
@@ -12,6 +13,35 @@ public partial class SettingsPage : ContentPage
         InitializeComponent();
         _viewModel = viewModel;
         BindingContext = viewModel;
+
+        UiScaleSlider.Value = viewModel.Settings.UiScale;
+        UiScaleLabel.Text = $"{UiScaleSlider.Value:P0}";
+    }
+
+    void OnUiScaleChanged(object? sender, ValueChangedEventArgs e) =>
+        UiScaleLabel.Text = $"{UiScale.Clamp(e.NewValue):P0}";
+
+    void OnUiScaleDragCompleted(object? sender, EventArgs e) => ApplyUiScale(UiScaleSlider.Value);
+
+    void OnUiScaleReset(object? sender, EventArgs e)
+    {
+        UiScaleSlider.Value = UiScale.Default;
+        ApplyUiScale(UiScale.Default);
+    }
+
+    /// <summary>Saves the scale and restarts the app so the activity attaches at the new density.</summary>
+    void ApplyUiScale(double value)
+    {
+        var scale = UiScale.Clamp(value);
+        if (Math.Abs(scale - _viewModel.Settings.UiScale) < 0.001)
+        {
+            return;
+        }
+
+        _viewModel.Settings.UiScale = scale;
+#if ANDROID
+        AppRestarter.Restart();
+#endif
     }
 
     void OnLocationResultSelected(object? sender, SelectionChangedEventArgs e)

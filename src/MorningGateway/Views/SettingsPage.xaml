@@ -12,7 +12,7 @@
     <!-- Fixed header: kiosk mode hides the system back control, so Settings needs its own way out. -->
     <Grid Grid.Row="0" Padding="20,16,20,8" ColumnDefinitions="*,Auto">
         <Label Text="Settings" Style="{StaticResource HeadingLabel}" VerticalOptions="Center" />
-        <Button Grid.Column="1" Text="Done" Style="{StaticResource IconButton}" WidthRequest="96" Command="{Binding CloseCommand}" />
+        <Button Grid.Column="1" Text="Done" Style="{StaticResource IconButton}" WidthRequest="-1" MinimumWidthRequest="96" Padding="14,0" Command="{Binding CloseCommand}" />
     </Grid>
 
     <ScrollView Grid.Row="1">
@@ -32,6 +32,17 @@
                         <Label Text="Use Fahrenheit" VerticalOptions="Center" />
                         <Switch Grid.Column="1" IsToggled="{Binding Settings.UseFahrenheit}" />
                     </Grid>
+
+                    <VerticalStackLayout Spacing="4">
+                        <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="12">
+                            <Label Text="Text &amp; UI size" VerticalOptions="Center" />
+                            <Label x:Name="UiScaleLabel" Grid.Column="1" VerticalOptions="Center" />
+                            <Button Grid.Column="2" Text="Reset" Clicked="OnUiScaleReset" />
+                        </Grid>
+                        <Slider x:Name="UiScaleSlider" Minimum="0.75" Maximum="1.75"
+                                ValueChanged="OnUiScaleChanged" DragCompleted="OnUiScaleDragCompleted" />
+                        <Label Text="Scales all text and elements. The screen redraws when you let go." Style="{StaticResource SecondaryLabel}" FontSize="12" />
+                    </VerticalStackLayout>
 
                     <Grid ColumnDefinitions="*,Auto">
                         <Label Text="Kiosk mode (hides the status and navigation bars until you restart the app)" VerticalOptions="Center" />

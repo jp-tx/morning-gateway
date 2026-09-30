@@ -23,10 +23,10 @@
 
                     <Label Grid.Column="1" Text="{Binding StatusNotice}" IsVisible="{Binding HasStatusNotice}" TextColor="#F5A623" FontSize="14" LineBreakMode="TailTruncation" HorizontalOptions="End" VerticalOptions="Center" />
 
-                    <Button Grid.Column="2" Text="Today" Style="{StaticResource IconButton}" WidthRequest="72" Command="{Binding GoToTodayCommand}" />
+                    <Button Grid.Column="2" Text="Today" Style="{StaticResource IconButton}" WidthRequest="-1" MinimumWidthRequest="72" Padding="14,0" Command="{Binding GoToTodayCommand}" />
                     <Button Grid.Column="3" Text="&#8592;" Style="{StaticResource IconButton}" Command="{Binding PreviousCommand}" />
                     <Button Grid.Column="4" Text="&#8594;" Style="{StaticResource IconButton}" Command="{Binding NextCommand}" />
-                    <Button Grid.Column="5" Text="Day" Style="{StaticResource IconButton}" WidthRequest="72" Command="{Binding ToggleViewModeCommand}">
+                    <Button Grid.Column="5" Text="Day" Style="{StaticResource IconButton}" WidthRequest="-1" MinimumWidthRequest="72" Padding="14,0" Command="{Binding ToggleViewModeCommand}">
                         <Button.Triggers>
                             <DataTrigger TargetType="Button" Binding="{Binding IsMonthMode}" Value="False">
                                 <Setter Property="Text" Value="Month" />

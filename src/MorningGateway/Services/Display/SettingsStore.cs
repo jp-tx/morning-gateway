@@ -1,3 +1,5 @@
+using UiScaleMath = MorningGateway.Services.Display.UiScale;
+
 namespace MorningGateway.Services.Display;
 
 public enum AppThemeMode { System, Light, Dark }
@@ -60,6 +62,13 @@ public class SettingsStore
     {
         get => new(Preferences.Default.Get(nameof(LastUpdateCheckUtc), 0L), DateTimeKind.Utc);
         set => Preferences.Default.Set(nameof(LastUpdateCheckUtc), value.Ticks);
+    }
+
+    /// <summary>Text and UI size multiplier (see <see cref="UiScaleMath"/>); applied when the activity is (re)created.</summary>
+    public double UiScale
+    {
+        get => UiScaleMath.Clamp(Preferences.Default.Get(nameof(UiScale), UiScaleMath.Default));
+        set { Preferences.Default.Set(nameof(UiScale), UiScaleMath.Clamp(value)); Changed?.Invoke(); }
     }
 
     /// <summary>Seconds between burn-in protection nudges (pixel shift + subtle dimming pulse).</summary>

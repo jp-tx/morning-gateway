@@ -144,7 +144,7 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
         var rangeEnd = FocusedMonth.AddMonths(1).AddDays(7).ToDateTime(TimeOnly.MinValue);
         var events = await _calendarAggregator.GetEventsAsync(rangeStart, rangeEnd).ConfigureAwait(false);
 
-        var cells = BuildMonthCells(FocusedMonth, events);
+        var cells = BuildMonthCells(FocusedMonth, events, MonthDayCell.MaxVisibleForScale(_settings.UiScale));
         var dayEvents = events.Where(e => e.OccursOn(FocusedDay)).OrderBy(e => e.Start).ToList();
 
         var problem = string.Join(" · ", _calendarAggregator.Problems);
@@ -247,7 +247,7 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
         }
     }
 
-    static List<MonthDayCell> BuildMonthCells(DateOnly monthStart, IReadOnlyList<CalendarEvent> events)
+    static List<MonthDayCell> BuildMonthCells(DateOnly monthStart, IReadOnlyList<CalendarEvent> events, int maxVisible)
     {
         var firstDayOfWeek = CultureInfo.CurrentCulture.DateTimeFormat.FirstDayOfWeek;
         var offset = ((int)monthStart.DayOfWeek - (int)firstDayOfWeek + 7) % 7;
@@ -265,6 +265,7 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
                 IsCurrentMonth = date.Month == monthStart.Month,
                 IsToday = date == today,
                 Events = dayEvents,
+                MaxVisible = maxVisible,
             });
         }
 

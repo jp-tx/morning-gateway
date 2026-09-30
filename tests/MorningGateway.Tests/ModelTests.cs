@@ -40,6 +40,23 @@ public class ModelTests
         Assert.Equal("2", cell.DayNumberText);
     }
 
+    [Theory]
+    [InlineData(0.75, 4)]
+    [InlineData(1.0, 3)]
+    [InlineData(1.4, 2)]
+    [InlineData(1.75, 1)]
+    public void Larger_ui_scales_show_fewer_event_chips_per_day(double scale, int expected) =>
+        Assert.Equal(expected, MonthDayCell.MaxVisibleForScale(scale));
+
+    [Fact]
+    public void Overflow_count_follows_the_visible_limit()
+    {
+        var events = Enumerable.Range(0, 4).Select(_ => At(new DateTime(2026, 10, 2, 9, 0, 0), new DateTime(2026, 10, 2, 10, 0, 0))).ToList();
+        var cell = new MonthDayCell { Date = new DateOnly(2026, 10, 2), IsCurrentMonth = true, IsToday = false, Events = events, MaxVisible = 1 };
+        Assert.Single(cell.VisibleEvents);
+        Assert.Equal("+3 more", cell.OverflowText);
+    }
+
     [Fact]
     public void Month_cell_with_three_or_fewer_events_has_no_overflow()
     {
@@ -53,5 +70,37 @@ public class ModelTests
         var s = new CalendarSourceConfig { DisplayName = "x", Type = CalendarSourceType.CalDav };
         Assert.Equal($"calsource_secret_{s.Id}", s.SecureStorageKey);
         Assert.DoesNotContain(typeof(CalendarSourceConfig).GetProperties(), p => p.Name.Contains("Password") || p.Name.Contains("Token"));
+    }
+}
+
+[Collection("MauiStatics")]
+public class UiScaleTests : MauiStaticsTestBase
+{
+    [Theory]
+    [InlineData(1.0, 1.0)]
+    [InlineData(0.1, 0.75)]
+    [InlineData(9.0, 1.75)]
+    [InlineData(1.234, 1.23)]
+    [InlineData(double.NaN, 1.0)]
+    public void Scale_is_clamped_to_a_usable_range(double input, double expected) =>
+        Assert.Equal(expected, MorningGateway.Services.Display.UiScale.Clamp(input));
+
+    [Theory]
+    [InlineData(320, 1.0, 320)]
+    [InlineData(320, 1.5, 480)]
+    [InlineData(320, 0.75, 240)]
+    [InlineData(280, 9.0, 490)]   // clamped to 1.75
+    public void Density_scales_with_the_setting(int deviceDpi, double scale, int expected) =>
+        Assert.Equal(expected, MorningGateway.Services.Display.UiScale.ScaledDensityDpi(deviceDpi, scale));
+
+    [Fact]
+    public void Setting_defaults_to_100_percent_persists_and_clamps()
+    {
+        var store = new MorningGateway.Services.Display.SettingsStore();
+        Assert.Equal(1.0, store.UiScale);
+        store.UiScale = 1.5;
+        Assert.Equal(1.5, new MorningGateway.Services.Display.SettingsStore().UiScale);
+        store.UiScale = 50;
+        Assert.Equal(1.75, store.UiScale);
     }
 }

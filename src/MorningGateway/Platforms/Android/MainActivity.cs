@@ -1,4 +1,6 @@
 using Android.App;
+using Android.Content;
+using Android.Content.Res;
 using Android.Content.PM;
 using Android.OS;
 using Android.Views;
@@ -16,6 +18,28 @@ namespace MorningGateway;
 public class MainActivity : MauiAppCompatActivity
 {
     KioskService? _kiosk;
+
+    /// <summary>
+    /// Applies the "Text &amp; UI size" setting by running this activity at a scaled display density,
+    /// which scales text and every dp-sized element together. Takes effect on (re)creation.
+    /// </summary>
+    protected override void AttachBaseContext(Context? @base)
+    {
+        if (@base?.Resources?.Configuration is { } current)
+        {
+            var scale = Preferences.Default.Get(nameof(SettingsStore.UiScale), UiScale.Default);
+            if (Math.Abs(UiScale.Clamp(scale) - 1.0) > 0.01)
+            {
+                var config = new Configuration(current)
+                {
+                    DensityDpi = UiScale.ScaledDensityDpi(current.DensityDpi, scale),
+                };
+                @base = @base.CreateConfigurationContext(config);
+            }
+        }
+
+        base.AttachBaseContext(@base);
+    }
 
     protected override void OnCreate(Bundle? savedInstanceState)
     {
