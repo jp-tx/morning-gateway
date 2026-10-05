@@ -167,4 +167,75 @@ public class CalendarStoreAndAggregatorTests : MauiStaticsTestBase
         await agg.GetEventsAsync(S, E);
         Assert.Empty(agg.Problems);
     }
+
+    // ---- offline cache ----
+
+    static string TempDir() => Path.Combine(Path.GetTempPath(), "mg-tests-" + Guid.NewGuid().ToString("N"));
+
+    [Fact]
+    public async Task When_a_source_goes_offline_its_last_good_events_are_shown()
+    {
+        var dir = TempDir();
+        try
+        {
+            var src = new CalendarSourceConfig { DisplayName = "a", Type = CalendarSourceType.IcsUrl };
+            var offline = false;
+            var provider = new FakeProvider
+            {
+                Type = CalendarSourceType.IcsUrl,
+                Events = s => offline ? throw new HttpRequestException("offline") : new[] { Ev("kept", s.Id, 3) },
+            };
+            var agg = new CalendarAggregatorService(StoreWith(src), new[] { provider }, new Services.Net.JsonFileCache(dir));
+
+            Assert.Equal("kept", Assert.Single(await agg.GetEventsAsync(S, E)).Title);
+            Assert.False(agg.IsOffline);
+
+            offline = true;
+            var events = await agg.GetEventsAsync(S, E, forceRefresh: true);
+            Assert.Equal("kept", Assert.Single(events).Title);
+            Assert.True(agg.IsOffline);
+            Assert.NotNull(agg.StaleSince);
+            Assert.Empty(agg.Problems);
+        }
+        finally
+        {
+            if (Directory.Exists(dir)) Directory.Delete(dir, true);
+        }
+    }
+
+    [Fact]
+    public async Task Saved_events_survive_a_restart_and_are_available_without_network()
+    {
+        var dir = TempDir();
+        try
+        {
+            var src = new CalendarSourceConfig { DisplayName = "a", Type = CalendarSourceType.IcsUrl };
+            var store = StoreWith(src);
+            var online = new FakeProvider { Type = CalendarSourceType.IcsUrl, Events = s => new[] { Ev("persisted", s.Id, 4) } };
+            await new CalendarAggregatorService(store, new[] { online }, new Services.Net.JsonFileCache(dir)).GetEventsAsync(S, E);
+
+            var restarted = new CalendarAggregatorService(store, new[] { online }, new Services.Net.JsonFileCache(dir));
+            Assert.Equal("persisted", Assert.Single(restarted.GetSavedEvents(S, E)).Title);
+        }
+        finally
+        {
+            if (Directory.Exists(dir)) Directory.Delete(dir, true);
+        }
+    }
+
+    [Fact]
+    public async Task A_failed_source_is_not_retried_immediately_but_is_when_forced()
+    {
+        var src = new CalendarSourceConfig { DisplayName = "a", Type = CalendarSourceType.IcsUrl };
+        var calls = 0;
+        var provider = new FakeProvider { Type = CalendarSourceType.IcsUrl, Events = _ => { calls++; throw new HttpRequestException("offline"); } };
+        var agg = new CalendarAggregatorService(StoreWith(src), new[] { provider });
+
+        await agg.GetEventsAsync(S, E);
+        await agg.GetEventsAsync(S, E);
+        Assert.Equal(1, calls);
+
+        await agg.GetEventsAsync(S, E, forceRefresh: true);
+        Assert.Equal(2, calls);
+    }
 }

@@ -30,6 +30,7 @@
   <ItemGroup>
     <Compile Include="..\..\src\MorningGateway\Models\*.cs" />
     <Compile Include="..\..\src\MorningGateway\Services\Calendar\*.cs" />
+    <Compile Include="..\..\src\MorningGateway\Services\Net\*.cs" />
     <Compile Include="..\..\src\MorningGateway\Services\Weather\OpenMeteoWeatherService.cs" />
     <Compile Include="..\..\src\MorningGateway\Services\Weather\WeatherCodeInfo.cs" />
     <Compile Include="..\..\src\MorningGateway\Services\Weather\IWeatherService.cs" />

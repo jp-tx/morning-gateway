@@ -5,6 +5,7 @@ using CommunityToolkit.Mvvm.Input;
 using MorningGateway.Models;
 using MorningGateway.Services.Calendar;
 using MorningGateway.Services.Display;
+using MorningGateway.Services.Net;
 using MorningGateway.Services.Updates;
 using MorningGateway.Services.Weather;
 using MorningGateway.Views;
@@ -17,12 +18,21 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
     readonly IWeatherService _weatherService;
     readonly SettingsStore _settings;
     readonly UpdateCoordinator _updates;
+    readonly JsonFileCache _cache;
+
+    const string WeatherCacheKey = "weather_snapshot";
+    static readonly TimeSpan NormalRefreshInterval = TimeSpan.FromMinutes(15);
+    static readonly TimeSpan OfflineRetryInterval = TimeSpan.FromMinutes(1);
+
+    bool _paintedSavedData;
+    bool _weatherStale;
 
     IDispatcherTimer? _clockTimer;
     IDispatcherTimer? _refreshTimer;
 
-    public DashboardViewModel(CalendarAggregatorService calendarAggregator, IWeatherService weatherService, SettingsStore settings, BurnInProtectionService burnIn, UpdateCoordinator updates)
+    public DashboardViewModel(CalendarAggregatorService calendarAggregator, IWeatherService weatherService, SettingsStore settings, BurnInProtectionService burnIn, UpdateCoordinator updates, JsonFileCache cache)
     {
+        _cache = cache;
         _updates = updates;
         _updates.PropertyChanged += (_, _) => OnPropertyChanged(nameof(StatusNotice));
         _calendarAggregator = calendarAggregator;
@@ -76,7 +86,11 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
     public bool HasCalendarProblem => !string.IsNullOrEmpty(CalendarProblem);
 
     /// <summary>Top-bar notice: calendar problems and/or an available app update.</summary>
-    public string StatusNotice => string.Join(" · ", new[] { CalendarProblem, _updates.Notice }.Where(t => !string.IsNullOrEmpty(t)));
+    public string StatusNotice => string.Join(" · ", new[] { CalendarProblem, OfflineNotice, _updates.Notice }.Where(t => !string.IsNullOrEmpty(t)));
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(StatusNotice), nameof(HasStatusNotice))]
+    string offlineNotice = string.Empty;
 
     public bool HasStatusNotice => !string.IsNullOrEmpty(StatusNotice);
 
@@ -101,7 +115,7 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
         _clockTimer.Start();
 
         _refreshTimer ??= dispatcher.CreateTimer();
-        _refreshTimer.Interval = TimeSpan.FromMinutes(15);
+        _refreshTimer.Interval = NormalRefreshInterval;
         _refreshTimer.Tick -= OnRefreshTick;
         _refreshTimer.Tick += OnRefreshTick;
         _refreshTimer.Start();
@@ -111,11 +125,20 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
 
     void OnClockTick(object? sender, EventArgs e) => ClockTime = DateTime.Now;
 
+    // async void handlers: anything thrown here would take the whole app down, so RefreshAsync never throws.
     async void OnRefreshTick(object? sender, EventArgs e) => await RefreshAsync();
 
     async void OnSettingsChanged()
     {
-        BurnIn.Start();
+        try
+        {
+            BurnIn.Start();
+        }
+        catch (Exception)
+        {
+            // Burn-in protection is cosmetic; still refresh.
+        }
+
         await RefreshAsync();
     }
 
@@ -130,28 +153,70 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
         IsBusy = true;
         try
         {
-            await Task.WhenAll(RefreshCalendarAsync(), RefreshWeatherAsync(), _updates.CheckIfDueAsync());
+            // Each part handles its own failures; the guard here is the last line of defence.
+            await Task.WhenAll(RefreshCalendarAsync(), RefreshWeatherAsync(), CheckForUpdateAsync());
+        }
+        catch (Exception)
+        {
         }
         finally
         {
             IsBusy = false;
+            // Poll quickly while offline so data comes back soon after the network does.
+            if (_refreshTimer is not null)
+            {
+                _refreshTimer.Interval = OfflineNotice.Length > 0 || _weatherStale ? OfflineRetryInterval : NormalRefreshInterval;
+            }
+        }
+    }
+
+    async Task CheckForUpdateAsync()
+    {
+        try
+        {
+            await _updates.CheckIfDueAsync();
+        }
+        catch (Exception)
+        {
+            // Update checks are best-effort.
         }
     }
 
     async Task RefreshCalendarAsync()
     {
-        var rangeStart = FocusedMonth.AddDays(-7).ToDateTime(TimeOnly.MinValue);
-        var rangeEnd = FocusedMonth.AddMonths(1).AddDays(7).ToDateTime(TimeOnly.MinValue);
-        var events = await _calendarAggregator.GetEventsAsync(rangeStart, rangeEnd).ConfigureAwait(false);
+        try
+        {
+            var rangeStart = FocusedMonth.AddDays(-7).ToDateTime(TimeOnly.MinValue);
+            var rangeEnd = FocusedMonth.AddMonths(1).AddDays(7).ToDateTime(TimeOnly.MinValue);
 
+            if (!_paintedSavedData)
+            {
+                // First load after launch: show the saved copy right away instead of waiting on a slow or dead network.
+                _paintedSavedData = true;
+                ApplyCalendar(_calendarAggregator.GetSavedEvents(rangeStart, rangeEnd), string.Empty, string.Empty);
+            }
+
+            var events = await _calendarAggregator.GetEventsAsync(rangeStart, rangeEnd).ConfigureAwait(false);
+            var offline = _calendarAggregator.IsOffline
+                ? $"Offline - calendar as of {_calendarAggregator.StaleSince?.ToLocalTime():MMM d, h:mm tt}"
+                : string.Empty;
+            ApplyCalendar(events, string.Join(" · ", _calendarAggregator.Problems), offline);
+        }
+        catch (Exception)
+        {
+            // Never let a refresh failure escape; whatever is on screen stays.
+        }
+    }
+
+    void ApplyCalendar(IReadOnlyList<CalendarEvent> events, string problem, string offline)
+    {
         var cells = BuildMonthCells(FocusedMonth, events, MonthDayCell.MaxVisibleForScale(_settings.UiScale));
         var dayEvents = events.Where(e => e.OccursOn(FocusedDay)).OrderBy(e => e.Start).ToList();
-
-        var problem = string.Join(" · ", _calendarAggregator.Problems);
 
         MainThreadInvoke(() =>
         {
             CalendarProblem = problem;
+            OfflineNotice = offline;
             MonthCells = new ObservableCollection<MonthDayCell>(cells);
             DayAllDayEvents = new ObservableCollection<CalendarEvent>(dayEvents.Where(e => e.IsAllDay));
             DayTimedEvents = new ObservableCollection<CalendarEvent>(dayEvents.Where(e => !e.IsAllDay));
@@ -162,14 +227,30 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
     {
         try
         {
+            if (Weather is null && LoadSavedWeather() is { } saved)
+            {
+                MainThreadInvoke(() => Weather = saved);
+            }
+
             var snapshot = await _weatherService.GetForecastAsync(
                 _settings.WeatherLatitude, _settings.WeatherLongitude, _settings.WeatherLocationName, _settings.UseFahrenheit).ConfigureAwait(false);
+            _weatherStale = false;
+            _cache.Save(WeatherCacheKey, snapshot);
             MainThreadInvoke(() => Weather = snapshot);
         }
         catch (Exception)
         {
-            // Keep showing the last good snapshot if the network hiccups.
+            // Keep showing the last good snapshot (in memory or saved) if the network hiccups.
+            _weatherStale = true;
         }
+    }
+
+    /// <summary>The saved forecast, only if it is for the currently configured place and unit.</summary>
+    WeatherSnapshot? LoadSavedWeather()
+    {
+        var saved = _cache.Load<WeatherSnapshot>(WeatherCacheKey);
+        var unit = _settings.UseFahrenheit ? "°F" : "°C";
+        return saved is not null && saved.LocationName == _settings.WeatherLocationName && saved.UnitSuffix == unit ? saved : null;
     }
 
     [RelayCommand]

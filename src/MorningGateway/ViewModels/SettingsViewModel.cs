@@ -269,6 +269,10 @@ public partial class SettingsViewModel : ObservableObject
                 StatusMessage = "No matching locations.";
             }
         }
+        catch (Exception)
+        {
+            StatusMessage = "Couldn't search - check the network connection and try again.";
+        }
         finally
         {
             IsBusy = false;

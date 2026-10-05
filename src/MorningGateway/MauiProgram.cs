@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Logging;
 using MorningGateway.Services.Calendar;
 using MorningGateway.Services.Display;
+using MorningGateway.Services.Net;
 using MorningGateway.Services.Updates;
 using MorningGateway.Services.Weather;
 using MorningGateway.ViewModels;
@@ -16,7 +17,9 @@ public static class MauiProgram
         builder.UseMauiApp<App>();
 
         // --- Cross-cutting ---
-        builder.Services.AddSingleton<HttpClient>();
+        // Short per-attempt timeouts + retries so a flaky link fails fast instead of hanging for minutes.
+        builder.Services.AddSingleton(_ => new HttpClient(new ResilientHttpHandler(new HttpClientHandler())) { Timeout = TimeSpan.FromMinutes(5) });
+        builder.Services.AddSingleton(_ => new JsonFileCache(Path.Combine(FileSystem.AppDataDirectory, "offline-cache")));
         builder.Services.AddSingleton<SettingsStore>();
 
         // --- Updates (GitHub Releases) ---
