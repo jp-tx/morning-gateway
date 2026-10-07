@@ -139,6 +139,20 @@ public class CalendarStoreAndAggregatorTests : MauiStaticsTestBase
     }
 
     [Fact]
+    public async Task Changing_the_calendar_sources_drops_the_cached_result()
+    {
+        var a = new CalendarSourceConfig { DisplayName = "a", Type = CalendarSourceType.IcsUrl };
+        var store = StoreWith(a);
+        var provider = new FakeProvider { Type = CalendarSourceType.IcsUrl, Events = s => new[] { Ev(s.DisplayName, s.Id, 3) } };
+        var agg = new CalendarAggregatorService(store, new[] { provider });
+
+        Assert.Single(await agg.GetEventsAsync(S, E));
+
+        store.Upsert(new CalendarSourceConfig { DisplayName = "b", Type = CalendarSourceType.IcsUrl });
+        Assert.Equal(2, (await agg.GetEventsAsync(S, E)).Count);
+    }
+
+    [Fact]
     public async Task Revoked_google_access_is_reported_as_a_problem_and_clears_on_recovery()
     {
         var g = new CalendarSourceConfig { DisplayName = "me@example.com", Type = CalendarSourceType.Google };

@@ -26,33 +26,34 @@ public static class IcsParsing
 
         foreach (var ev in calendar.Events)
         {
-            IList<Ical.Net.DataTypes.Occurrence> occurrences;
+            // One malformed event (bad RRULE, missing or unknown time zone...) is skipped, not allowed to take the calendar down.
             try
             {
-                occurrences = ev.GetOccurrences(rangeStart.LocalDateTime, rangeEnd.LocalDateTime).ToList();
+                var parsed = new List<CalendarEvent>();
+                foreach (var occurrence in ev.GetOccurrences(rangeStart.LocalDateTime, rangeEnd.LocalDateTime))
+                {
+                    var start = occurrence.Period.StartTime.AsDateTimeOffset;
+                    var end = occurrence.Period.EndTime?.AsDateTimeOffset ?? start;
+
+                    parsed.Add(new CalendarEvent
+                    {
+                        Id = $"{sourceId}:{ev.Uid}:{start.UtcTicks}",
+                        SourceId = sourceId,
+                        Title = string.IsNullOrWhiteSpace(ev.Summary) ? "(untitled)" : ev.Summary,
+                        Location = ev.Location,
+                        Description = ev.Description,
+                        Start = start,
+                        End = end,
+                        IsAllDay = ev.IsAllDay,
+                        ColorHex = colorHex,
+                    });
+                }
+
+                results.AddRange(parsed);
             }
             catch (Exception)
             {
                 continue;
-            }
-
-            foreach (var occurrence in occurrences)
-            {
-                var start = occurrence.Period.StartTime.AsDateTimeOffset;
-                var end = occurrence.Period.EndTime.AsDateTimeOffset;
-
-                results.Add(new CalendarEvent
-                {
-                    Id = $"{sourceId}:{ev.Uid}:{start.UtcTicks}",
-                    SourceId = sourceId,
-                    Title = string.IsNullOrWhiteSpace(ev.Summary) ? "(untitled)" : ev.Summary,
-                    Location = ev.Location,
-                    Description = ev.Description,
-                    Start = start,
-                    End = end,
-                    IsAllDay = ev.IsAllDay,
-                    ColorHex = colorHex,
-                });
             }
         }
 

@@ -45,6 +45,22 @@ public class SettingsStore
         set { Preferences.Default.Set(nameof(WeatherLocationName), value); Changed?.Invoke(); }
     }
 
+    /// <summary>
+    /// Sets the weather place in one step. Setting the three properties one by one raises Changed after
+    /// each, and a refresh started in between would fetch the new latitude with the old longitude.
+    /// </summary>
+    public void SetWeatherLocation(double latitude, double longitude, string? locationName = null)
+    {
+        Preferences.Default.Set(nameof(WeatherLatitude), latitude);
+        Preferences.Default.Set(nameof(WeatherLongitude), longitude);
+        if (locationName is not null)
+        {
+            Preferences.Default.Set(nameof(WeatherLocationName), locationName);
+        }
+
+        Changed?.Invoke();
+    }
+
     public bool UseFahrenheit
     {
         get => Preferences.Default.Get(nameof(UseFahrenheit), true);

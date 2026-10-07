@@ -34,6 +34,39 @@ public class WeatherTests
         Assert.All(snap.Hourly, h => Assert.True(h.Time >= DateTimeOffset.Now.AddHours(-1.01)));
     }
 
+    [Fact]
+    public async Task Null_and_missing_values_do_not_fail_the_whole_forecast()
+    {
+        var t = DateTime.Now.AddHours(1);
+        var json = $$$"""
+        {"current":{"temperature_2m":10.5,"apparent_temperature":null,"weather_code":null,"is_day":0,"wind_speed_10m":null},
+         "hourly":{"time":["{{{t:yyyy-MM-ddTHH:mm}}}","{{{t.AddHours(1):yyyy-MM-ddTHH:mm}}}","{{{t.AddHours(2):yyyy-MM-ddTHH:mm}}}"],
+                   "temperature_2m":[11.0,null,13.0],"precipitation_probability":[null,20,30],"weather_code":[1,2]},
+         "daily":{"time":["{{{DateTime.Today:yyyy-MM-dd}}}","{{{DateTime.Today.AddDays(1):yyyy-MM-dd}}}"],
+                  "temperature_2m_max":[20.0,null],"temperature_2m_min":[5.0,6.0],"precipitation_probability_max":[null,null],"weather_code":[3,3]}}
+        """;
+        var handler = new StubHandler((_, _) => StubHandler.Json(json));
+        var snap = await new OpenMeteoWeatherService(handler.Client()).GetForecastAsync(1, 2, "x", false);
+
+        Assert.Equal(10.5, snap.Current!.FeelsLike);
+        Assert.False(snap.Current.IsDay);
+        Assert.Equal(new[] { 11.0, 13.0 }, snap.Hourly.Select(h => h.Temperature));   // the hour with no temperature is dropped
+        Assert.Equal(0, snap.Hourly[0].PrecipitationProbability);
+        Assert.Single(snap.Daily);
+    }
+
+    [Fact]
+    public async Task Hourly_times_use_the_forecast_locations_utc_offset()
+    {
+        // 10:00 wall-clock at UTC+9 tomorrow is 01:00 UTC, whatever zone the device is in.
+        var day = DateTime.UtcNow.Date.AddDays(1);
+        var json = $$$"""{"utc_offset_seconds":32400,"hourly":{"time":["{{{day:yyyy-MM-dd}}}T10:00"],"temperature_2m":[1],"precipitation_probability":[1],"weather_code":[1]}}""";
+        var handler = new StubHandler((_, _) => StubHandler.Json(json));
+        var snap = await new OpenMeteoWeatherService(handler.Client()).GetForecastAsync(1, 2, "x", false);
+
+        Assert.Equal(day.AddHours(1), Assert.Single(snap.Hourly).Time.UtcDateTime);
+    }
+
     [Theory]
     [InlineData(true, "fahrenheit", "°F")]
     [InlineData(false, "celsius", "°C")]

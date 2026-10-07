@@ -133,7 +133,14 @@ public class GoogleCalendarProvider : ICalendarProvider
             var body = await response.Content.ReadFromJsonAsync<EventsListResponse>(cancellationToken: cancellationToken).ConfigureAwait(false);
             foreach (var item in body?.Items ?? Enumerable.Empty<GoogleEventDto>())
             {
-                results.Add(ToCalendarEvent(item, source, rangeStart));
+                try
+                {
+                    results.Add(ToCalendarEvent(item, source, rangeStart));
+                }
+                catch (FormatException)
+                {
+                    // One event with an unparseable date is skipped rather than failing the whole calendar.
+                }
             }
 
             pageToken = body?.NextPageToken;

@@ -42,8 +42,22 @@ public partial class DayCalendarView : ContentView
         set => SetValue(AllDayEventsProperty, value);
     }
 
-    static void OnAnyDataChanged(BindableObject bindable, object oldValue, object newValue) =>
-        ((DayCalendarView)bindable).Rebuild();
+    static void OnAnyDataChanged(BindableObject bindable, object oldValue, object newValue)
+    {
+        try
+        {
+            ((DayCalendarView)bindable).Rebuild();
+        }
+        catch (Exception ex)
+        {
+            // Runs inside a binding update on the UI thread; a throw here would be unhandled.
+            Services.Diagnostics.CrashLog.Write("Day view rebuild failed", ex);
+        }
+    }
+
+    /// <summary>Calendar colors come from servers and saved settings; a malformed one falls back instead of throwing.</summary>
+    static Color ParseColor(string? hex) =>
+        Color.TryParse(hex, out var color) && color is not null ? color : Color.FromArgb("#4C8BF5");
 
     void BuildHourLabels()
     {
@@ -79,7 +93,7 @@ public partial class DayCalendarView : ContentView
                 Padding = new Thickness(10, 4),
                 Margin = new Thickness(0, 0, 6, 6),
                 StrokeThickness = 0,
-                BackgroundColor = Color.FromArgb(evt.ColorHex),
+                BackgroundColor = ParseColor(evt.ColorHex),
                 StrokeShape = new Microsoft.Maui.Controls.Shapes.RoundRectangle { CornerRadius = 6 },
                 Content = new Label { Text = evt.Title, TextColor = Colors.White, FontSize = 13 },
             };
@@ -117,7 +131,7 @@ public partial class DayCalendarView : ContentView
             {
                 Padding = new Thickness(6, 3),
                 StrokeThickness = 0,
-                BackgroundColor = Color.FromArgb(evt.ColorHex),
+                BackgroundColor = ParseColor(evt.ColorHex),
                 StrokeShape = new Microsoft.Maui.Controls.Shapes.RoundRectangle { CornerRadius = 6 },
                 Content = new VerticalStackLayout
                 {
@@ -125,12 +139,14 @@ public partial class DayCalendarView : ContentView
                     Children =
                     {
                         new Label { Text = evt.Title, TextColor = Colors.White, FontSize = 12, FontAttributes = FontAttributes.Bold, LineBreakMode = LineBreakMode.TailTruncation },
-                        new Label { Text = evt.Start.ToString("h:mm tt"), TextColor = Colors.White, FontSize = 10, Opacity = 0.85 },
+                        new Label { Text = evt.Start.LocalDateTime.ToString("h:mm tt"), TextColor = Colors.White, FontSize = 10, Opacity = 0.85 },
                     },
                 },
             };
 
-            AbsoluteLayout.SetLayoutBounds(block, new Rect(1.0 / laneCount * lane, top, 1.0 / laneCount, height));
+            // A proportional X is a share of the leftover space (canvas minus block), not of the canvas.
+            var x = laneCount > 1 ? (double)lane / (laneCount - 1) : 0;
+            AbsoluteLayout.SetLayoutBounds(block, new Rect(x, top, 1.0 / laneCount, height));
             AbsoluteLayout.SetLayoutFlags(block, AbsoluteLayoutFlags.XProportional | AbsoluteLayoutFlags.WidthProportional);
             EventCanvas.Children.Add(block);
         }

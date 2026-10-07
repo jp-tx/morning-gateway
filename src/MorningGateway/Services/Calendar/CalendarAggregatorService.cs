@@ -36,6 +36,8 @@ public class CalendarAggregatorService
         _store = store;
         _providers = providers.ToDictionary(p => p.Type);
         _disk = diskCache;
+        // A calendar added, removed or toggled in Settings must show up on the next refresh, not when the cache expires.
+        _store.SourcesChanged += () => _cache = null;
     }
 
     /// <summary>Saved events only, no network - for painting the dashboard immediately at startup.</summary>
@@ -116,7 +118,9 @@ public class CalendarAggregatorService
 
     static string KeyFor(CalendarSourceConfig source) => $"events_{source.Id}";
 
-    SavedEvents? LoadSaved(CalendarSourceConfig source) => _disk?.Load<SavedEvents>(KeyFor(source));
+    // A file that parses but has no event list counts as "nothing saved" rather than blowing up every refresh.
+    SavedEvents? LoadSaved(CalendarSourceConfig source) =>
+        _disk?.Load<SavedEvents>(KeyFor(source)) is { Events: not null } saved ? saved : null;
 
     /// <summary>Keeps earlier-fetched events outside this range too, so browsing months online doesn't evict the others from the offline copy.</summary>
     void SaveFresh(CalendarSourceConfig source, IReadOnlyList<CalendarEvent> fresh, DateTimeOffset rangeStart, DateTimeOffset rangeEnd)

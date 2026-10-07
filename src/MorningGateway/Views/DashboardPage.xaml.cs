@@ -19,4 +19,11 @@ public partial class DashboardPage : ContentPage
         _viewModel.StartClocksAndTimers();
         _ = _viewModel.RefreshCommand.ExecuteAsync(null);
     }
+
+    protected override void OnDisappearing()
+    {
+        // Also runs when the activity is destroyed, which is what stops the timers driving a dead page.
+        _viewModel.Stop();
+        base.OnDisappearing();
+    }
 }

@@ -47,9 +47,16 @@ public partial class SettingsViewModel : ObservableObject
     [RelayCommand]
     async Task CloseAsync()
     {
-        if (Shell.Current is not null)
+        try
         {
-            await Shell.Current.GoToAsync("..");
+            if (Shell.Current is not null)
+            {
+                await Shell.Current.GoToAsync("..");
+            }
+        }
+        catch (Exception)
+        {
+            // Already navigating away (e.g. Done tapped twice); nothing to do.
         }
     }
 
@@ -219,10 +226,18 @@ public partial class SettingsViewModel : ObservableObject
             ColorHex = string.IsNullOrWhiteSpace(calendar.ColorHex) ? NewCalDavColor : calendar.ColorHex!,
         };
 
-        await SecureStorage.Default.SetAsync(source.SecureStorageKey, NewCalDavPassword);
-        _sourceStore.Upsert(source);
-        Sources.Add(source);
-        StatusMessage = $"Added \"{source.DisplayName}\".";
+        try
+        {
+            await SecureStorage.Default.SetAsync(source.SecureStorageKey, NewCalDavPassword);
+            _sourceStore.Upsert(source);
+            Sources.Add(source);
+            StatusMessage = $"Added \"{source.DisplayName}\".";
+        }
+        catch (Exception ex)
+        {
+            // Secure storage can fail, and this runs from an async void handler where a throw would be unhandled.
+            StatusMessage = $"Couldn't save the calendar password: {ex.Message}";
+        }
     }
 
     // --- Manage existing sources ---
@@ -234,9 +249,16 @@ public partial class SettingsViewModel : ObservableObject
             return;
         }
 
-        await _sourceStore.RemoveAsync(source.Id);
-        Sources.Remove(source);
-        StatusMessage = $"Removed \"{source.DisplayName}\".";
+        try
+        {
+            await _sourceStore.RemoveAsync(source.Id);
+            Sources.Remove(source);
+            StatusMessage = $"Removed \"{source.DisplayName}\".";
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Couldn't remove \"{source.DisplayName}\": {ex.Message}";
+        }
     }
 
     /// <summary>
@@ -287,9 +309,8 @@ public partial class SettingsViewModel : ObservableObject
             return;
         }
 
-        Settings.WeatherLatitude = result.Latitude;
-        Settings.WeatherLongitude = result.Longitude;
-        Settings.WeatherLocationName = string.IsNullOrWhiteSpace(result.Region) ? $"{result.Name}, {result.Country}" : $"{result.Name}, {result.Region}";
+        Settings.SetWeatherLocation(result.Latitude, result.Longitude,
+            string.IsNullOrWhiteSpace(result.Region) ? $"{result.Name}, {result.Country}" : $"{result.Name}, {result.Region}");
         LocationSearchText = Settings.WeatherLocationName;
         LocationResults.Clear();
         StatusMessage = $"Weather location set to {Settings.WeatherLocationName}.";
@@ -308,8 +329,7 @@ public partial class SettingsViewModel : ObservableObject
                 return;
             }
 
-            Settings.WeatherLatitude = location.Latitude;
-            Settings.WeatherLongitude = location.Longitude;
+            Settings.SetWeatherLocation(location.Latitude, location.Longitude);
             StatusMessage = "Using the device's current coordinates. Search above to set a friendly place name.";
         }
         finally

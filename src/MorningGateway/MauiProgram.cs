@@ -47,7 +47,7 @@ public static class MauiProgram
         builder.Services.AddSingleton<BurnInProtectionService>();
 
         // --- App shell, pages, view models ---
-        builder.Services.AddSingleton<AppShell>();
+        builder.Services.AddTransient<AppShell>();
         builder.Services.AddTransient<DashboardViewModel>();
         builder.Services.AddTransient<DashboardPage>();
         builder.Services.AddTransient<SettingsViewModel>();

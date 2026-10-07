@@ -45,14 +45,34 @@ public class MainActivity : MauiAppCompatActivity
     {
         base.OnCreate(savedInstanceState);
 
-        _kiosk = IPlatformApplication.Current?.Services.GetService<KioskService>();
+        var services = IPlatformApplication.Current?.Services;
+        _kiosk = services?.GetService<KioskService>();
         if (_kiosk is not null)
         {
-            _kiosk.PropertyChanged += (_, _) => RunOnUiThread(ApplyKioskState);
+            _kiosk.PropertyChanged += OnKioskChanged;
         }
 
         ApplyKioskState();
+
+        // Keep-awake is a flag on this activity's window, so it has to be (re)applied for every new activity.
+        if (services?.GetService<SettingsStore>() is { } settings)
+        {
+            services.GetService<KeepAwakeService>()?.Apply(settings.KeepScreenOn);
+        }
     }
+
+    protected override void OnDestroy()
+    {
+        // KioskService outlives the activity; don't let it keep calling into a destroyed one.
+        if (_kiosk is not null)
+        {
+            _kiosk.PropertyChanged -= OnKioskChanged;
+        }
+
+        base.OnDestroy();
+    }
+
+    void OnKioskChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e) => RunOnUiThread(ApplyKioskState);
 
     public override void OnWindowFocusChanged(bool hasFocus)
     {
@@ -65,13 +85,20 @@ public class MainActivity : MauiAppCompatActivity
 
     void ApplyKioskState()
     {
-        if (_kiosk?.IsActive ?? true)
+        try
         {
-            HideSystemBars();
+            if (_kiosk?.IsActive ?? true)
+            {
+                HideSystemBars();
+            }
+            else
+            {
+                ShowSystemBars();
+            }
         }
-        else
+        catch (Exception)
         {
-            ShowSystemBars();
+            // Purely cosmetic; never worth taking the activity down for.
         }
     }
 

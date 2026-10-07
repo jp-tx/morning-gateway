@@ -45,7 +45,7 @@ public class RestartActivity : Activity
             Process.KillProcess(mainPid);
         }
 
-        var launch = PackageManager!.GetLaunchIntentForPackage(PackageName!)!;
+        var launch = PackageManager?.GetLaunchIntentForPackage(PackageName ?? string.Empty) ?? new Intent(this, typeof(MainActivity));
         launch.AddFlags(ActivityFlags.NewTask | ActivityFlags.ClearTask);
         StartActivity(launch);
 
